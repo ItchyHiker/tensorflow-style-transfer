@@ -1,6 +1,8 @@
 # tensorflow-style-transfer
 Implement some style transfer model using TensorFlow and seving it by TensorFlow Serving.
-**Model Code borrows heavily from https://github.com/dikatok/styletransfer **
+
+**Model Code borrows heavily from https://github.com/dikatok/styletransfer**
+
 ## Models
 ### [A Neural Algorithm of Artistic Style](https://arxiv.org/abs/1508.06576)
 ### [Perceptual Losses for Real-Time Style Transfer and Super-Resolution](https://arxiv.org/abs/1603.08155)
