@@ -63,7 +63,7 @@ def train(style_img_path, content_img_path, num_iters, learning_rate, style_size
 
     print("Finished {num_iters} iterations in {time} seconds.".format(num_iters=num_iters, time=end-start))
                     
-    Image.fromarray(result.astype('uint8')).save('gates_result.jpg')
+    Image.fromarray(result.astype('uint8')).save('imgs/result/gates_result.jpg')
 
 
 def main(args):
@@ -73,7 +73,7 @@ def main(args):
             num_iters=1000,
             learning_rate=config.learning_rate,
             style_size=256,
-            content_size=256,
+            content_size=512,
             log_dir='./logs/gates',
             style_loss_weights=config.style_loss_weights,
             content_loss_weights=config.content_loss_weights,

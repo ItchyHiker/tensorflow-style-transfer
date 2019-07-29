@@ -1,13 +1,13 @@
 # config parameters
-MODEL_NAME = 'gates'
-STYLE_IMG = '/home/ubuntu/dataset/styles/1/style1.jpg'
+MODEL_NAME = 'msgnet'
+STYLE_IMG = 'imgs/style/1//style7.jpg'
 CONTENT_IMG = './imgs/content/content2.jpg'
-STYLE_IMG_PATH = '/home/ubuntu/dataset/styles'
+STYLE_IMG_PATH = 'imgs/style'
 CONTENT_IMG_PATH = '/home/ubuntu/dataset/COCO_2017'
 
 epochs = 4
 batch_size = 4
-learning_rate = 1e-3
+learning_rate = 1
 content_img_size = 256
 style_img_size = 256
 
