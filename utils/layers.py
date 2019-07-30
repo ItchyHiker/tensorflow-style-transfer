@@ -71,3 +71,31 @@ def upbottleneck(x, name, filters, strides=1):
         x = upbottleneck_conv(x, 'conv3', filters, kernel_size=1, strides=1)
     return x + residual
 
+def fixed_conv(x, name, conv_w, conv_b, strides, norm=instance_norm, act=tf.nn.relu):
+    padding = conv_w.shape[1] // 2
+    with tf.variable_scope(name):
+        x = tf.pad(x, paddings=[[0,0],[padding, padding], [padding, padding], [0,0]], mode='REFLECT')
+        x = tf.nn.conv2d(x, conv_w, [1, strides, strides, 1], 'VALID', name='conv')
+        x = tf.nn.bias_add(x, conv_b)
+        if norm is not None:
+            x = norm(x, name='norm')
+        if act is not None:
+            x = act(x, name='act')
+    return x
+
+def fixed_residual_block(x, name, conv1_w, conv1_b, conv2_w, conv2_b):
+    with tf.variable_scope(name):
+        residual = x
+        x = fixed_conv(x, 'conv1', conv1_w, conv1_b, strides=1)
+        x = fixed_conv(x, 'conv2', conv2_w, conv2_b, strides=1, act=None)
+    return x + residual
+
+def fixed_upsample(x, name, conv_w, conv_b, strides):
+    shape = x.shape.as_list()
+    inferred_shape = tf.shape(x)
+    w, h = shape[1] or inferred_shape[1], shape[2] or inferred_shape[2]
+    x = tf.image.resize_images(x, size=[w*strides, h*strides])
+    x = fixed_conv(x, name, conv_w, conv_b, strides=1)
+    return x
+
+

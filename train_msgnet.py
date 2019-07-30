@@ -163,7 +163,7 @@ def eval_with_saved_model(saved_model_dir, style_img, content_img, style_size):
         result = sess.run(tf.squeeze(outputs), feed_dict={inputs:c, style_gram_in:style_gram})
         end = time.time()
         print('Inference time: {time} seconds'.format(time=end-start))
-        Image.fromarray(result.astype('uint8')).save('msgnet_result.jpg')
+        Image.fromarray(result.astype('uint8')).save('imgs/result/msgnet_result.jpg')
 
 def main(args):
     if args.train:

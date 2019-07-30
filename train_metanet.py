@@ -58,7 +58,7 @@ def train(style_img_path, content_img_path, num_epochs, learning_rate, style_siz
         content_summary = tf.summary.image('content', c_placeholder)
         transferred_summary = tf.summary.image('transferred', transferred)
         image_summary = tf.summary.merge([style_summary, content_summary, transferred_summary])
-
+        
         summary = tf.summary.FileWriter(graph=g, logdir=log_dir)
 
 
@@ -81,9 +81,8 @@ def train(style_img_path, content_img_path, num_epochs, learning_rate, style_siz
                     style_iter.reset()
                     s, _ = style_iter.next()
 
-                _, cur_loss, cur_loss_summary, cur_image_summary \
-                = sess.run([optimizer, loss, loss_summary, image_summary], feed_dict={s_placeholder: s, c_placeholder: c})
-            
+                _, w, b, cur_loss, cur_loss_summary, cur_image_summary \
+                = sess.run([optimizer, weights, biases, loss, loss_summary, image_summary], feed_dict={s_placeholder: s, c_placeholder: c})
                 if (i+1) % log_iter == 0:
                     print("Iteration: {0}, loss: {1}".format(epoch*content_iter.n // 4 + i+1, cur_loss))
                 
@@ -99,11 +98,39 @@ def train(style_img_path, content_img_path, num_epochs, learning_rate, style_siz
                 os.makedirs(ckpt_dir, exist_ok=True)
             ckpt_path = saver.save(sess, save_path, write_meta_graph=False, global_step=epoch*content_iter.n // 4 + i+1)
             print("Checkpoint saved as: {ckpt_path}".format(ckpt_path=ckpt_path))
-        
+         
         end = time.time()
+        
+        np.save('weights.npy', w)
+        np.save('biases.npy', b)
 
     print("Finished {num_iters} iterations in {time} seconds.".format(num_iters=total_iteration, time=end-start))
-                    
+
+def export_meta_weights_and_biases(style_img, style_size, ckpt_dir, export_dir, vgg_weights_path):
+    
+    style_img = tf.keras.preprocessing.image.img_to_array(img=tf.keras.preprocessing.image.load_img(style_img, target_size=(style_size, style_size)))
+
+    
+    if os.path.exists(export_dir):
+        shutil.rmtree(export_dir)
+
+    tf.reset_default_graph()
+    eval_graph = tf.Graph()
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    exporter = tf.saved_model.builder.SavedModelBuilder(export_dir)
+    latest_ckpt = tf.train.latest_checkpoint(ckpt_dir)
+    vgg_weights = np.load(vgg_weights_path)
+    
+    with eval_graph.as_default() as g, tf.Session(config=config, graph=eval_graph) as sess:
+        s_placeholder = tf.placeholder(name='style', dtype=tf.float32, shape=[1, style_size, style_size, 3])
+        target_style_features = VGG16(s_placeholder, vgg_weights)
+        weights, biases = meta(target_style_features)
+        style_img = sess.run(tf.expand_dims(style_img, axis=0))    
+        saver = tf.train.Saver(var_list=tf.trainable_variables())
+        saver.restore(sess, latest_ckpt)
+        w, b = sess.run([weights, biases], feed_dict={s_placeholder: style_img})
+
 def export_saved_model(style_size, ckpt_dir, export_dir):
     if os.path.exists(export_dir):
         shutil.rmtree(export_dir)
@@ -180,8 +207,10 @@ def main(args):
             vgg_weights_path='/home/ubuntu/weights/vgg16_weights.npz', 
             ckpt_dir=config.ckpt_dir)
     else:
-        export_saved_model(config.style_img_size, './ckpt/msgnet', './saved_model/msgnet')
-        eval_with_saved_model('./saved_model/msgnet', config.STYLE_IMG, config.CONTENT_IMG, config.style_img_size)
+        export_meta_weights_and_biases(config.STYLE_IMG, config.style_img_size,\
+            './ckpt/metanet', './saved_model/metanet', '/home/ubuntu/weights/vgg16_weights.npz')
+        # export_saved_model(config.style_img_size, './ckpt/metanet', './saved_model/metanet')
+        # eval_with_saved_model('./saved_model/metanet', config.STYLE_IMG, config.CONTENT_IMG, config.style_img_size)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
